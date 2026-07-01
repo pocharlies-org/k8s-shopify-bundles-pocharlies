@@ -14,7 +14,7 @@ labels:
 images:
   - name: shopify-app
     newName: harbor.e-dani.com/homelab/shopify-bundle-app
-    digest: sha256:b87f90fe7336515ce2c05f70a4535985ff0c3ffd82561f62e16438c17eedaa36
+    digest: sha256:050f1e04d12ca5e9c9cdc80a47886362069994c969b38cf63ae2415681db57e1
 
 patches:
   # Inlined (not a separate file) so CI kubeconform doesn't treat it as a
