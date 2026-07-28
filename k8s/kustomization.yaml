@@ -37,7 +37,15 @@ patches:
                   - { name: SHOPIFY_ALLOWED_SHOPS, value: "skirmshop-spain.myshopify.com,ymimst-yh.myshopify.com" }
                   - { name: SHOPIFY_APP_PROXY_MAX_AGE_SECONDS, value: "300" }
                   - { name: STANDALONE_CONFIGURATOR_ENABLED, value: "false" }
-                  - { name: DATABASE_URL, value: "postgresql://$(DB_USER):$(DB_PASSWORD)@postgres-shared-rw.databases.svc.cluster.local:5432/bundles" }
+                  # connection_limit: sin él Prisma dimensiona el pool con
+                  # `cpus_fisicos * 2 + 1` LEIDO DEL HOST, no del límite del
+                  # contenedor. Este pod corre en `sauvage` (48 vCPU, sin cpu
+                  # limit) y arranca DOS PrismaClient (app/shopify.server.ts +
+                  # el del framework en dist/db/client.js) → 96 conexiones
+                  # físicas medidas el 28-07-2026, el mayor consumidor de
+                  # postgres-shared, con 0 activas.
+                  # application_name: trazabilidad en pg_stat_activity.
+                  - { name: DATABASE_URL, value: "postgresql://$(DB_USER):$(DB_PASSWORD)@postgres-shared-rw.databases.svc.cluster.local:5432/bundles?connection_limit=5&pool_timeout=15&connect_timeout=10&application_name=bundles-app" }
                 envFrom:
                   - secretRef: { name: bundles-secrets }
   - target: { group: apps, version: v1, kind: Deployment, name: app }
