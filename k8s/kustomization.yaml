@@ -34,7 +34,12 @@ patches:
                   - { name: PORT, value: "3460" }
                   - { name: SHOPIFY_APP_URL, value: "https://skirmshop.e-dani.com/bundles" }
                   - { name: SCOPES, value: "read_products,write_products,read_inventory,read_orders,write_app_proxy,read_cart_transforms,write_cart_transforms,read_discounts,write_discounts" }
-                  - { name: SHOPIFY_ALLOWED_SHOPS, value: "skirmshop-spain.myshopify.com,ymimst-yh.myshopify.com" }
+                  # Shopify signs every App Proxy request with the immutable
+                  # myshopifyDomain. Keep the admin and proxy boundaries on
+                  # that same single canonical shop; the historical
+                  # skirmshop-spain alias is not a second installation.
+                  - { name: SHOPIFY_STORE, value: "ymimst-yh.myshopify.com" }
+                  - { name: SHOPIFY_ALLOWED_SHOPS, value: "ymimst-yh.myshopify.com" }
                   - { name: SHOPIFY_APP_PROXY_MAX_AGE_SECONDS, value: "300" }
                   - { name: STANDALONE_CONFIGURATOR_ENABLED, value: "false" }
                   # connection_limit: sin él Prisma dimensiona el pool con

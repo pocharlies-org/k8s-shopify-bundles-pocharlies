@@ -16,6 +16,13 @@ permissions:
   actions: read
 
 jobs:
+  canonical-shop-contract:
+    runs-on: arc-k8s
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/check-canonical-shop.py
+
   standard:
     uses: pocharlies-org/k8s-gitops-pocharlies/.github/workflows/reusable-ci.yml@main
     with:
