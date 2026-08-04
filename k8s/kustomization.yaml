@@ -73,7 +73,7 @@ patches:
                   # application_name: trazabilidad en pg_stat_activity.
                   - { name: DATABASE_URL, value: "postgresql://$(DB_USER):$(DB_PASSWORD)@postgres-shared-rw.databases.svc.cluster.local:5432/bundles?connection_limit=5&pool_timeout=15&connect_timeout=10&application_name=bundles-app" }
                 envFrom:
-                  - secretRef: { name: bundles-secrets }
+                  - secretRef: { name: bundles-shopify-credentials }
   - target: { group: apps, version: v1, kind: Deployment, name: app }
     patch: |-
       - op: replace
