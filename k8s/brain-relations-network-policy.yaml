@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: brain-relations-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: bundles
+      app.kubernetes.io/name: shopify-app
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: skirmshop-product-relations
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: relations-api
+      ports:
+        - { protocol: TCP, port: 8080 }
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }

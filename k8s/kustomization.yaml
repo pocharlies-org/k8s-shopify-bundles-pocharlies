@@ -3,11 +3,15 @@ kind: Kustomization
 
 resources:
   - https://github.com/pocharlies/k8s-shopify-framework-pocharlies.git//base?ref=deploy/prod
+  - app-externalsecret.yaml
+  - brain-relations-externalsecret.yaml
+  - brain-relations-network-policy.yaml
 
 namePrefix: bundles-
 
 labels:
-  - includeSelectors: true
+  - includeSelectors: false
+    includeTemplates: true
     pairs:
       app.kubernetes.io/instance: bundles
 
@@ -26,6 +30,9 @@ patches:
       metadata:
         name: app
       spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/instance: bundles
         template:
           spec:
             containers:
@@ -42,6 +49,20 @@ patches:
                   - { name: SHOPIFY_ALLOWED_SHOPS, value: "ymimst-yh.myshopify.com" }
                   - { name: SHOPIFY_APP_PROXY_MAX_AGE_SECONDS, value: "300" }
                   - { name: STANDALONE_CONFIGURATOR_ENABLED, value: "false" }
+                  # Deterministic, tenant-bound recommendations. The API key is
+                  # projected from the same Vault property used by the
+                  # relations API; no credential is copied into Git.
+                  - { name: BRAIN_RELATIONS_URL, value: "http://brain-product-relations.skirmshop-product-relations.svc.cluster.local:8080" }
+                  - { name: BRAIN_RELATIONS_INSTANCE, value: "skirmshop" }
+                  - { name: BRAIN_RELATIONS_TENANT_ID, value: "807a4817-b73a-42ce-8954-8dd5dc80b751" }
+                  - { name: BRAIN_RELATIONS_STORE_ID, value: "269d0560-9c16-4db8-86e4-52867efc1901" }
+                  - { name: BRAIN_RELATIONS_PROVIDER_BINDING_ID, value: "54d94645-7f69-404f-954e-edeb105bd215" }
+                  - { name: BRAIN_RELATIONS_TIMEOUT_MS, value: "2500" }
+                  - name: BRAIN_RELATIONS_API_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: bundles-brain-relations
+                        key: BRAIN_RELATIONS_API_KEY
                   # connection_limit: sin él Prisma dimensiona el pool con
                   # `cpus_fisicos * 2 + 1` LEIDO DEL HOST, no del límite del
                   # contenedor. Este pod corre en `sauvage` (48 vCPU, sin cpu
@@ -58,6 +79,11 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/ports/0/containerPort
         value: 3460
+  - target: { version: v1, kind: Service, name: app }
+    patch: |-
+      - op: add
+        path: /spec/selector/app.kubernetes.io~1instance
+        value: bundles
   - target: { group: traefik.io, version: v1alpha1, kind: IngressRoute, name: app }
     patch: |-
       - op: replace
