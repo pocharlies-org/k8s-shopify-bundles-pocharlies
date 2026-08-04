@@ -20,11 +20,11 @@ jobs:
     runs-on: arc-k8s
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: python3 scripts/check-canonical-shop.py
 
   standard:
-    uses: pocharlies-org/k8s-gitops-pocharlies/.github/workflows/reusable-ci.yml@main
+    uses: pocharlies-org/k8s-gitops-pocharlies/.github/workflows/reusable-ci.yml@96ec4d91e103d5b62159fe5ac3d5ae9f84340063
     with:
       runner: arc-k8s
       run_node: false
