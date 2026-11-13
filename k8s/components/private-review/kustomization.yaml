@@ -1,0 +1,103 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+configMapGenerator:
+  - name: private-review-sync-8ab0d624b90ec479
+    files:
+      - sync.sh
+    literals:
+      - REVIEW_VERSION=review-8ab0d624b90ec479
+      - REVIEW_MANIFEST_SHA256=8ab0d624b90ec47957c87697bc881d9a3933155ddcdc6b3d3094cafa64de48a7
+
+generatorOptions:
+  # This bundles-only component pins patched references to the final namePrefix.
+  # The package version is already part of this immutable ConfigMap name.
+  disableNameSuffixHash: true
+
+patches:
+  - target:
+      kind: Deployment
+      name: app
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: app
+      spec:
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxUnavailable: 0
+            maxSurge: 1
+        template:
+          spec:
+            initContainers:
+              - name: private-review-sync
+                image: rclone/rclone:1.69.0
+                command: ["sh", "/sync/sync.sh"]
+                envFrom:
+                  - configMapRef:
+                      name: bundles-private-review-sync-8ab0d624b90ec479
+                env:
+                  - name: RCLONE_CONFIG_REVIEW_TYPE
+                    value: s3
+                  - name: RCLONE_CONFIG_REVIEW_PROVIDER
+                    value: Minio
+                  - name: RCLONE_CONFIG_REVIEW_REGION
+                    value: us-east-1
+                  - name: RCLONE_CONFIG_REVIEW_ENDPOINT
+                    value: http://skirmshop-drive-s3.backup-hub.svc.cluster.local:9000
+                  - name: REVIEW_BUCKET
+                    value: skirmshop-drive
+                  - name: RCLONE_CONFIG_REVIEW_ACCESS_KEY_ID
+                    valueFrom:
+                      secretKeyRef:
+                        name: skirmshop-drive-s3-bundles
+                        key: AWS_ACCESS_KEY_ID
+                  - name: RCLONE_CONFIG_REVIEW_SECRET_ACCESS_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: skirmshop-drive-s3-bundles
+                        key: AWS_SECRET_ACCESS_KEY
+                volumeMounts:
+                  - name: private-review-sync
+                    mountPath: /sync
+                    readOnly: true
+                  - name: private-review-models
+                    mountPath: /review
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+                  limits:
+                    memory: 256Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop: [ALL]
+            containers:
+              - name: app
+                command: ["sh", "-ec"]
+                args:
+                  - |
+                    ./node_modules/.bin/prisma migrate deploy
+                    node build/review-tools/import-model-review.mjs /review/manifests/model-source-dossiers.json /review/manifests/existing-models-reconciled.json
+                    node build/review-tools/import-private-review.mjs /review/manifests/private-review-revised-models.json /review
+                    node build/review-tools/import-model-review.mjs /review/manifests/model-source-dossiers.json /review/manifests/existing-models-reconciled.json --apply
+                    node build/review-tools/import-private-review.mjs /review/manifests/private-review-revised-models.json /review --apply
+                    exec npm run start
+                env:
+                  - name: HIDEOUT_REVIEW_ROOT
+                    value: /review
+                volumeMounts:
+                  - name: private-review-models
+                    mountPath: /review
+                    readOnly: true
+            volumes:
+              - name: private-review-sync
+                configMap:
+                  name: bundles-private-review-sync-8ab0d624b90ec479
+              - name: private-review-models
+                emptyDir:
+                  sizeLimit: 256Mi
