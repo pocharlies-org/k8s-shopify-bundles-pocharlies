@@ -54,6 +54,35 @@ class PrivateReviewSync(unittest.TestCase):
         self.assertNotEqual(self.run_script().returncode, 0)
         self.assertFalse((self.target / 'model.glb').exists())
 
+    def test_startup_migrates_and_imports_before_serving(self):
+        text = (ROOT / 'k8s/components/private-review/kustomization.yaml').read_text()
+        block = text.split('                  - |\n', 1)[1].split('                env:', 1)[0]
+        script = '\n'.join(line[20:] for line in block.splitlines())
+        executable = self.root / 'node_modules/.bin'
+        executable.mkdir(parents=True)
+        mock = '#!/bin/sh\nset -eu\nprintf "%s %s\\n" "$0" "$*" >> "$CALL_LOG"\n[ "${FAIL_STEP:-}" != "$(basename "$0")" ]\n'
+        for path in [executable / 'prisma', self.bin / 'node', self.bin / 'npm']:
+            path.write_text(mock)
+            path.chmod(0o700)
+        log = self.root / 'calls.log'
+        env = {**self.env, 'CALL_LOG': str(log)}
+        result = subprocess.run(['sh', '-ec', script], cwd=self.root, env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = log.read_text().splitlines()
+        self.assertEqual(len(calls), 6)
+        self.assertTrue(calls[0].endswith('prisma migrate deploy'))
+        self.assertNotIn('--apply', calls[1])
+        self.assertNotIn('--apply', calls[2])
+        self.assertTrue(calls[3].endswith('--apply'))
+        self.assertTrue(calls[4].endswith('--apply'))
+        self.assertTrue(calls[5].endswith('npm run start'))
+        for failed, expected_calls in [('prisma', 1), ('node', 2)]:
+            log.unlink()
+            failed_run = subprocess.run(['sh', '-ec', script], cwd=self.root,
+                                        env={**env, 'FAIL_STEP': failed}, capture_output=True, text=True)
+            self.assertNotEqual(failed_run.returncode, 0)
+            self.assertEqual(len(log.read_text().splitlines()), expected_calls)
+
     def test_read_only_runtime_and_scoped_secret_are_declared(self):
         text = (ROOT / 'k8s/components/private-review/kustomization.yaml').read_text()
         self.assertIn('name: skirmshop-drive-s3-bundles', text)

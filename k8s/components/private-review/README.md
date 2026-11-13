@@ -27,12 +27,12 @@ Do not overwrite a published version; create a new package version instead.
    Required secret keys: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
 3. The versioned package is uploaded to the private bucket through an authorized
    upload path, and its manifest digest is checked against the value above.
-4. The review references are imported idempotently into the destination database
-   as `quality=draft`, using `/app/build/review-tools/import-model-review.mjs` and
-   `/app/build/review-tools/import-private-review.mjs` from the new image. The app
-   build compiles and smoke-tests these JavaScript tools for Node 20; no native
-   TypeScript loader or extra runtime install is needed. Do not execute the source
-   scripts directly in Node 20. A dry-run is required before writes.
+4. The new image includes Prisma as an explicit runtime dependency and the
+   compiled `/app/build/review-tools/import-model-review.mjs` and
+   `/app/build/review-tools/import-private-review.mjs` tools. Startup runs additive
+   migrations, both dry-runs and both idempotent imports before serving. Imports
+   create only drafts, never overwrite existing rows and never approve geometry.
+   No native TypeScript loader or extra runtime install is needed.
 5. Security reviews the new admin file-serving boundary and this storage component.
 
 Then add `components/private-review` to the root kustomization and pin the new
@@ -49,8 +49,10 @@ Admin authentication remains mandatory for reading a GLB; there is no new public
 asset origin or public catalog approval.
 
 Rolling updates keep the existing pod available (`maxUnavailable: 0`). A failed
-copy or hash verification blocks the new pod rather than serving partial files.
-The directory is ephemeral and limited to 256 MiB. No persistent volume is added.
+copy, hash verification, migration or import blocks the new pod rather than
+serving partial data. The directory is ephemeral and limited to 256 MiB. No
+persistent volume is added. Database migrations remain additive so the old pod
+can keep serving during startup.
 
 Rollback is a Git revert of the component/image/package pin. Do not delete an
 ArgoCD Application. Keep additive database fields and review drafts unless a
@@ -59,8 +61,12 @@ storefront is not changed by importing drafts.
 
 ## Checks performed
 
-- Five script/configuration unit tests, including modified model, wrong manifest
-  and invalid version rejection: `python3 -I tests/test_private_review.py`.
+- Six script/configuration unit tests, including modified model, wrong manifest,
+  invalid version and startup failure rejection:
+  `python3 -I tests/test_private_review.py`.
+- Local isolated PostgreSQL: six migrations applied to an empty database; all 70
+  app tests passed. Real package imports created 3,839 references and 65 revised
+  drafts, then created zero rows on repetition. Zero models were approved.
 - `sh -n k8s/components/private-review/sync.sh`.
 - Kustomize build of a temporary local wrapper containing the real overlay and
   this component: ConfigMap, initContainer and volume references resolve to the
