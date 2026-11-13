@@ -61,16 +61,19 @@ storefront is not changed by importing drafts.
 
 ## Checks performed
 
-- Six script/configuration unit tests, including modified model, wrong manifest,
-  invalid version and startup failure rejection:
+- Seven script/configuration tests, including modified model, wrong manifest,
+  invalid version, startup failure and exact activation namePrefix composition:
   `python3 -I tests/test_private_review.py`.
 - Local isolated PostgreSQL: six migrations applied to an empty database; all 70
   app tests passed. Real package imports created 3,839 references and 65 revised
   drafts, then created zero rows on repetition. Zero models were approved.
 - `sh -n k8s/components/private-review/sync.sh`.
-- Kustomize build of a temporary local wrapper containing the real overlay and
-  this component: ConfigMap, initContainer and volume references resolve to the
-  same versioned name. The root overlay itself remains unchanged.
+- Kustomize build of an isolated copy of the real overlay with this component
+  enabled in that overlay (not an outer wrapper): ConfigMap, initContainer and
+  volume references resolve to `bundles-private-review-sync-8ab0d624b90ec479`.
+  This bundles-only component pins patched references to the final `namePrefix`;
+  the regression test exercises that exact composition without network access.
+  The checked-in overlay itself remains unchanged.
 
 Not yet verified: upload, private runtime credential, S3 copy in the real image,
 new application image, destination database import, rollout and admin Shopify

@@ -10,6 +10,7 @@ configMapGenerator:
       - REVIEW_MANIFEST_SHA256=8ab0d624b90ec47957c87697bc881d9a3933155ddcdc6b3d3094cafa64de48a7
 
 generatorOptions:
+  # This bundles-only component pins patched references to the final namePrefix.
   # The package version is already part of this immutable ConfigMap name.
   disableNameSuffixHash: true
 
@@ -36,7 +37,7 @@ patches:
                 command: ["sh", "/sync/sync.sh"]
                 envFrom:
                   - configMapRef:
-                      name: private-review-sync-8ab0d624b90ec479
+                      name: bundles-private-review-sync-8ab0d624b90ec479
                 env:
                   - name: RCLONE_CONFIG_REVIEW_TYPE
                     value: s3
@@ -96,7 +97,7 @@ patches:
             volumes:
               - name: private-review-sync
                 configMap:
-                  name: private-review-sync-8ab0d624b90ec479
+                  name: bundles-private-review-sync-8ab0d624b90ec479
               - name: private-review-models
                 emptyDir:
                   sizeLimit: 256Mi

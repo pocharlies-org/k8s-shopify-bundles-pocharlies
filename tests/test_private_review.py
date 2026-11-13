@@ -2,6 +2,7 @@ import hashlib
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 import unittest
 
@@ -53,6 +54,33 @@ class PrivateReviewSync(unittest.TestCase):
         self.env['REVIEW_VERSION'] = '../outside'
         self.assertNotEqual(self.run_script().returncode, 0)
         self.assertFalse((self.target / 'model.glb').exists())
+
+    @unittest.skipUnless(shutil.which('kustomize'), 'kustomize is required for the composition check')
+    def test_activation_references_use_the_final_prefixed_configmap(self):
+        overlay = self.root / 'overlay'
+        shutil.copytree(ROOT / 'k8s', overlay)
+        config = overlay / 'kustomization.yaml'
+        remote = 'https://github.com/pocharlies-org/k8s-shopify-framework-pocharlies.git//base?ref=deploy/prod'
+        text = config.read_text()
+        self.assertIn(remote, text)
+        config.write_text(text.replace(remote, 'base.yaml') + '\ncomponents:\n  - components/private-review\n')
+        (overlay / 'base.yaml').write_text('''apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: shopify-app:latest
+          ports:
+            - containerPort: 3000
+''')
+        result = subprocess.run(['kustomize', 'build', str(overlay)], capture_output=True, text=True, check=True)
+        names = [line.strip() for line in result.stdout.splitlines()
+                 if 'name:' in line and 'private-review-sync-8ab0d624b90ec479' in line]
+        self.assertEqual(names, ['name: bundles-private-review-sync-8ab0d624b90ec479'] * 3)
 
     def test_startup_migrates_and_imports_before_serving(self):
         text = (ROOT / 'k8s/components/private-review/kustomization.yaml').read_text()
