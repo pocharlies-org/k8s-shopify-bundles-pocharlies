@@ -28,11 +28,11 @@ Do not overwrite a published version; create a new package version instead.
 3. The versioned package is uploaded to the private bucket through an authorized
    upload path, and its manifest digest is checked against the value above.
 4. The review references are imported idempotently into the destination database
-   as `quality=draft`, using `import-model-review.mjs` and
-   `import-private-review.mjs` from the application repository. Those scripts need
-   a Node version capable of native TypeScript loading (22.15+), or an equivalent
-   precompiled release tool. Do not assume the current Node 20 runtime can execute
-   the source scripts directly. A dry-run is required before writes.
+   as `quality=draft`, using `/app/build/review-tools/import-model-review.mjs` and
+   `/app/build/review-tools/import-private-review.mjs` from the new image. The app
+   build compiles and smoke-tests these JavaScript tools for Node 20; no native
+   TypeScript loader or extra runtime install is needed. Do not execute the source
+   scripts directly in Node 20. A dry-run is required before writes.
 5. Security reviews the new admin file-serving boundary and this storage component.
 
 Then add `components/private-review` to the root kustomization and pin the new
