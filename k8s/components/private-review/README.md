@@ -1,7 +1,8 @@
 # Private model review (SKIRM-470)
 
-Prepared component, NOT enabled in the root overlay. It must not be enabled until
-all prerequisites below are verified. No existing image pin is changed here.
+The root overlay enables this component together with the scanned and signed
+application digest below. This is deployment configuration, not proof that the
+rollout, database import or authenticated Shopify review has succeeded.
 
 ## Package
 
@@ -18,9 +19,11 @@ Do not overwrite a published version; create a new package version instead.
 
 ## Preconditions for activation
 
-1. A newly built bundles image containing the private review code from
-   `shopify-bundle-app#8`, with database migrations applied through the deployment
-   process. The current image does NOT contain this feature.
+1. A scanned and signed bundles image containing `shopify-bundle-app#8` and the
+   dependency remediation in `shopify-bundle-app#10`. Release run `43618314437`
+   published source `1def229147a51b905b055bb32d8c091ae2a17345` with digest
+   `sha256:d52fb18f6833d5779f6d3a928d7df918293ed4cddeb9e88c7cbc34f808c2b472`.
+   The root overlay pins that exact digest; migrations run through deployment.
 2. Security provisions `skirmshop/skirmshop-drive-s3-bundles`, using the existing
    1Password Connect / ExternalSecret mechanism. The runtime key must have only
    read/list access to `hideout-review/*`; no upload or deletion permissions.
@@ -37,9 +40,10 @@ Do not overwrite a published version; create a new package version instead.
    runtime image. No native TypeScript loader or extra runtime install is needed.
 5. Security reviews the new admin file-serving boundary and this storage component.
 
-Then add `components/private-review` to the root kustomization and pin the new
-application image in the same deployment PR. This preparatory PR intentionally
-leaves the root unchanged and cannot expose the review UI or restart workloads.
+The component and image pin change in the same deployment PR. Before merging,
+require green CI and Security's verdict on the final activation head. Merging
+this configuration triggers the normal ArgoCD rollout; no manual apply, restart
+or live patch is needed.
 
 ## Behavior and rollback
 
@@ -75,7 +79,8 @@ storefront is not changed by importing drafts.
   volume references resolve to `bundles-private-review-sync-8ab0d624b90ec479`.
   This bundles-only component pins patched references to the final `namePrefix`;
   the regression test exercises that exact composition without network access.
-  The checked-in overlay itself remains unchanged.
+  The test uses the checked-in activation and exact application digest rather
+  than adding a second synthetic component declaration.
 
 Verified on 2026-11-14 (SKIRM-478): separate runtime read-only and upload-only
 credentials are provisioned through Connect/ExternalSecrets. The versioned package
@@ -83,13 +88,15 @@ was uploaded without overwriting an existing version; the manifest and all 90
 listed file hashes were read back and verified with the runtime identity. There
 are 91 remote objects including manifest.sha256; zero models were approved.
 
-Application PR8 is merged as c28ae5a4a6ef750533f61db505b650ecd91af93a. Image build
-run 43611523308 compiled successfully but Trivy blocked publication for fixable
-vulnerabilities. Dependency remediation is in `SKIRM-470-image-deps`. Security's
-SKIRM-480 verdict permits only a package-scoped CVE-2026-34077 exception while
-Remix Single Fetch stays disabled; it does not waive the remaining scan findings.
-A successfully scanned, signed new image is still required before activation.
-Do not enable this component with the old application digest. Not yet verified:
-S3 copy in the real initContainer, new application image, destination database
-import, rollout and admin Shopify session in production. Do not report this
-component as deployed.
+Application PR10 merged the dependency remediation as
+`1def229147a51b905b055bb32d8c091ae2a17345`. Release run `43618314437` succeeded:
+registry-verified digest, Sigstore keyless signature, SBOM and SLSA provenance.
+The detailed Trivy report has no active blocking findings and one ignored finding:
+CVE-2026-34077 on turbo-stream 2.4.1, authorized by SKIRM-480 only while Remix
+Single Fetch is disabled, expiring on 2026-12-14 or immediately upon an incompatible
+configuration/framework change. The evidence summary counter says zero suppressed
+findings; the detailed report records one, which is the authoritative count.
+
+Not yet verified: copy in the real initContainer, the new image running, destination
+database import, rollout and an authenticated Shopify admin session. Do not report
+this component as deployed or the complete hideout as delivered from CI alone.

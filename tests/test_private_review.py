@@ -63,7 +63,8 @@ class PrivateReviewSync(unittest.TestCase):
         remote = 'https://github.com/pocharlies-org/k8s-shopify-framework-pocharlies.git//base?ref=deploy/prod'
         text = config.read_text()
         self.assertIn(remote, text)
-        config.write_text(text.replace(remote, 'base.yaml') + '\ncomponents:\n  - components/private-review\n')
+        self.assertIn('components:\n  - components/private-review\n', text)
+        config.write_text(text.replace(remote, 'base.yaml'))
         (overlay / 'base.yaml').write_text('''apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -81,6 +82,9 @@ spec:
         names = [line.strip() for line in result.stdout.splitlines()
                  if 'name:' in line and 'private-review-sync-8ab0d624b90ec479' in line]
         self.assertEqual(names, ['name: bundles-private-review-sync-8ab0d624b90ec479'] * 3)
+        self.assertIn('image: harbor.e-dani.com/homelab/shopify-bundle-app@sha256:'
+                      'd52fb18f6833d5779f6d3a928d7df918293ed4cddeb9e88c7cbc34f808c2b472', result.stdout)
+        self.assertIn('exec node ./node_modules/@remix-run/serve/dist/cli.js ./build/server/index.js', result.stdout)
 
     def test_startup_migrates_and_imports_before_serving(self):
         text = (ROOT / 'k8s/components/private-review/kustomization.yaml').read_text()
