@@ -75,6 +75,14 @@ storefront is not changed by importing drafts.
   the regression test exercises that exact composition without network access.
   The checked-in overlay itself remains unchanged.
 
-Not yet verified: upload, private runtime credential, S3 copy in the real image,
+Verified on 2026-11-14 (SKIRM-478): separate runtime read-only and upload-only
+credentials are provisioned through Connect/ExternalSecrets. The versioned package
+was uploaded without overwriting an existing version; the manifest and all 90
+listed file hashes were read back and verified with the runtime identity. There
+are 91 remote objects including manifest.sha256; zero models were approved.
+
+Application PR8 is merged as c28ae5a4a6ef750533f61db505b650ecd91af93a. Image build
+run 43611523308 is the next prerequisite; do not enable this component with the
+old application digest. Not yet verified: S3 copy in the real initContainer,
 new application image, destination database import, rollout and admin Shopify
 session in production. Do not report this component as deployed.
