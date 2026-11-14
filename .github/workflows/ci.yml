@@ -24,6 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 scripts/check-canonical-shop.py
+      - name: Install verified Kustomize for private-review composition tests
+        run: |
+          set -euo pipefail
+          curl --retry 3 --retry-all-errors -fsSL \
+            'https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.5.0/kustomize_v5.5.0_linux_amd64.tar.gz' \
+            -o "$RUNNER_TEMP/kustomize.tar.gz"
+          printf '%s  %s\n' '6703a3a70a0c47cf0b37694030b54f1175a9dfeb17b3818b623ed58b9dbc2a77' "$RUNNER_TEMP/kustomize.tar.gz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar xzf "$RUNNER_TEMP/kustomize.tar.gz" -C "$RUNNER_TEMP/bin" kustomize
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - run: python3 -I tests/test_private_review.py
 
   standard:
     uses: pocharlies-org/k8s-gitops-pocharlies/.github/workflows/reusable-ci.yml@main

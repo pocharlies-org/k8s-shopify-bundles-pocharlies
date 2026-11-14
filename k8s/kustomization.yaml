@@ -6,6 +6,9 @@ resources:
 
 namePrefix: bundles-
 
+components:
+  - components/private-review
+
 labels:
   - includeSelectors: true
     pairs:
@@ -14,7 +17,7 @@ labels:
 images:
   - name: shopify-app
     newName: harbor.e-dani.com/homelab/shopify-bundle-app
-    digest: sha256:a24f4338c497044ad939efe38f5c545ea5b4eaa9630cc4ad13e5d421f31d2784
+    digest: sha256:d52fb18f6833d5779f6d3a928d7df918293ed4cddeb9e88c7cbc34f808c2b472
 
 patches:
   # Inlined (not a separate file) so CI kubeconform doesn't treat it as a
