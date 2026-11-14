@@ -86,7 +86,7 @@ patches:
                     node build/review-tools/import-private-review.mjs /review/manifests/private-review-revised-models.json /review
                     node build/review-tools/import-model-review.mjs /review/manifests/model-source-dossiers.json /review/manifests/existing-models-reconciled.json --apply
                     node build/review-tools/import-private-review.mjs /review/manifests/private-review-revised-models.json /review --apply
-                    exec npm run start
+                    exec node ./node_modules/@remix-run/serve/dist/cli.js ./build/server/index.js
                 env:
                   - name: HIDEOUT_REVIEW_ROOT
                     value: /review

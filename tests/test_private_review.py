@@ -89,7 +89,7 @@ spec:
         executable = self.root / 'node_modules/.bin'
         executable.mkdir(parents=True)
         mock = '#!/bin/sh\nset -eu\nprintf "%s %s\\n" "$0" "$*" >> "$CALL_LOG"\n[ "${FAIL_STEP:-}" != "$(basename "$0")" ]\n'
-        for path in [executable / 'prisma', self.bin / 'node', self.bin / 'npm']:
+        for path in [executable / 'prisma', self.bin / 'node']:
             path.write_text(mock)
             path.chmod(0o700)
         log = self.root / 'calls.log'
@@ -103,7 +103,7 @@ spec:
         self.assertNotIn('--apply', calls[2])
         self.assertTrue(calls[3].endswith('--apply'))
         self.assertTrue(calls[4].endswith('--apply'))
-        self.assertTrue(calls[5].endswith('npm run start'))
+        self.assertTrue(calls[5].endswith('node ./node_modules/@remix-run/serve/dist/cli.js ./build/server/index.js'))
         for failed, expected_calls in [('prisma', 1), ('node', 2)]:
             log.unlink()
             failed_run = subprocess.run(['sh', '-ec', script], cwd=self.root,

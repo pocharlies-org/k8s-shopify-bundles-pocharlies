@@ -32,7 +32,9 @@ Do not overwrite a published version; create a new package version instead.
    `/app/build/review-tools/import-private-review.mjs` tools. Startup runs additive
    migrations, both dry-runs and both idempotent imports before serving. Imports
    create only drafts, never overwrite existing rows and never approve geometry.
-   No native TypeScript loader or extra runtime install is needed.
+   The server starts with `node ./node_modules/@remix-run/serve/dist/cli.js
+   ./build/server/index.js`; npm and Yarn are build-time tools, absent from the
+   runtime image. No native TypeScript loader or extra runtime install is needed.
 5. Security reviews the new admin file-serving boundary and this storage component.
 
 Then add `components/private-review` to the root kustomization and pin the new
@@ -82,7 +84,12 @@ listed file hashes were read back and verified with the runtime identity. There
 are 91 remote objects including manifest.sha256; zero models were approved.
 
 Application PR8 is merged as c28ae5a4a6ef750533f61db505b650ecd91af93a. Image build
-run 43611523308 is the next prerequisite; do not enable this component with the
-old application digest. Not yet verified: S3 copy in the real initContainer,
-new application image, destination database import, rollout and admin Shopify
-session in production. Do not report this component as deployed.
+run 43611523308 compiled successfully but Trivy blocked publication for fixable
+vulnerabilities. Dependency remediation is in `SKIRM-470-image-deps`. Security's
+SKIRM-480 verdict permits only a package-scoped CVE-2026-34077 exception while
+Remix Single Fetch stays disabled; it does not waive the remaining scan findings.
+A successfully scanned, signed new image is still required before activation.
+Do not enable this component with the old application digest. Not yet verified:
+S3 copy in the real initContainer, new application image, destination database
+import, rollout and admin Shopify session in production. Do not report this
+component as deployed.
