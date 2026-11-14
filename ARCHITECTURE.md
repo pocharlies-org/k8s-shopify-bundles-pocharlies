@@ -12,10 +12,10 @@ Manifests de `shopify-bundle-app`. Código en `pocharlies-org/shopify-bundle-app
 Kustomize con base remota; sin Helm.
 
 ## Componentes compartidos
-Base del framework; todo lo demás son parches inline (puerto 3460, `SHOPIFY_APP_URL`, `SCOPES`, `SHOPIFY_ALLOWED_SHOPS`, `SHOPIFY_APP_PROXY_MAX_AGE_SECONDS`, `match` del IngressRoute).
+Base del framework y componente local `k8s/components/private-review` para sincronizar y cargar borradores privados; el overlay mantiene parches inline (puerto 3460, `SHOPIFY_APP_URL`, `SCOPES`, `SHOPIFY_ALLOWED_SHOPS`, `SHOPIFY_APP_PROXY_MAX_AGE_SECONDS`, `match` del IngressRoute).
 
 ## Cómo se construye
-Un solo `k8s/kustomization.yaml` (parches inline para que kubeconform no vea un Deployment sin selector).
+El overlay `k8s/kustomization.yaml` compone la base remota y `k8s/components/private-review/kustomization.yaml` (parches inline para que kubeconform no vea un Deployment sin selector).
 
 ## Tests y validaciones
 `reusable-ci.yml` con `kustomize_paths: ". k8s"`.
