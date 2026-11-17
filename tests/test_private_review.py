@@ -115,12 +115,24 @@ spec:
             self.assertNotEqual(failed_run.returncode, 0)
             self.assertEqual(len(log.read_text().splitlines()), expected_calls)
 
-    def test_read_only_runtime_and_scoped_secret_are_declared(self):
+    def test_read_only_runtime_and_ovh_secret_are_declared(self):
+        # INFRA-1175: el paquete se sirve ya desde OVH Object Storage; la
+        # credencial es el ExternalSecret bundles-s3-ovh (usuario compartido
+        # k8s-objectstore hasta que security cree el usuario OVH propio).
         text = (ROOT / 'k8s/components/private-review/kustomization.yaml').read_text()
-        self.assertIn('name: skirmshop-drive-s3-bundles', text)
+        self.assertIn('name: bundles-s3-ovh', text)
+        self.assertIn('value: https://s3.sbg.io.cloud.ovh.net', text)
+        self.assertIn('value: Other', text)
+        self.assertIn('value: sbg', text)
+        self.assertIn('name: RCLONE_CONFIG_REVIEW_FORCE_PATH_STYLE', text)
+        self.assertNotIn('backup-hub', text)
         self.assertIn('maxUnavailable: 0', text)
         self.assertIn('mountPath: /review\n                    readOnly: true', text)
         self.assertNotIn('secretKeyRef:\n                        name: bundles-secrets', text)
+        es = (ROOT / 'k8s/components/private-review/s3-ovh.externalsecret.yaml').read_text()
+        self.assertIn('key: ovh-object-storage-s3', es)
+        self.assertIn('name: bundles-s3-ovh', es)
+        self.assertIn('security.e-dani.com/rotation-class: object-storage', es)
 
 
 if __name__ == '__main__':

@@ -24,10 +24,16 @@ Do not overwrite a published version; create a new package version instead.
    published source `1def229147a51b905b055bb32d8c091ae2a17345` with digest
    `sha256:d52fb18f6833d5779f6d3a928d7df918293ed4cddeb9e88c7cbc34f808c2b472`.
    The root overlay pins that exact digest; migrations run through deployment.
-2. Security provisions `skirmshop/skirmshop-drive-s3-bundles`, using the existing
-   1Password Connect / ExternalSecret mechanism. The runtime key must have only
-   read/list access to `hideout-review/*`; no upload or deletion permissions.
-   Required secret keys: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
+2. The credential is declared in this component by the ExternalSecret `s3-ovh`
+   (rendered `bundles-s3-ovh`), reading the 1Password item
+   `ovh-object-storage-s3` through the `onepassword-connect` store
+   (`refreshPolicy: OnChange`). Required secret keys: `AWS_ACCESS_KEY_ID`,
+   `AWS_SECRET_ACCESS_KEY`. Since INFRA-1175 the bucket lives in OVH Object
+   Storage (`https://s3.sbg.io.cloud.ovh.net`, region `sbg`, `provider Other`,
+   `force_path_style true`) and the key is the shared `k8s-objectstore` user:
+   the read/list-only scoping over `hideout-review/*` that the MinIO identity
+   had is a known residual risk until Security provisions a per-consumer OVH
+   user in its weekly rotation batch.
 3. The versioned package is uploaded to the private bucket through an authorized
    upload path, and its manifest digest is checked against the value above.
 4. The new image includes Prisma as an explicit runtime dependency and the
@@ -87,6 +93,18 @@ credentials are provisioned through Connect/ExternalSecrets. The versioned packa
 was uploaded without overwriting an existing version; the manifest and all 90
 listed file hashes were read back and verified with the runtime identity. There
 are 91 remote objects including manifest.sha256; zero models were approved.
+That verification ran against the home MinIO; the bucket has since moved.
+
+2026-11-17 (INFRA-1175): the home MinIO is being shut down and `skirmshop-drive`
+now lives in OVH Object Storage (same bucket name, same object keys). The
+initContainer pulls the package from `https://s3.sbg.io.cloud.ovh.net` (region
+`sbg`, `provider Other`, `force_path_style true`) with the shared
+`k8s-objectstore` credential through the new ExternalSecret `bundles-s3-ovh`;
+the read-only/upload-only split above no longer holds until Security creates a
+per-consumer OVH user. Re-verified read-only against OVH with that credential
+(minio-py from `control-nexus/deploy/dgx-dashboard-backend`): 91 objects under
+`hideout-review/review-8ab0d624b90ec479/`, 74,738,918 bytes including
+manifest.sha256.
 
 Application PR10 merged the dependency remediation as
 `1def229147a51b905b055bb32d8c091ae2a17345`. Release run `43618314437` succeeded:

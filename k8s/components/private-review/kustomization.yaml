@@ -1,6 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
+resources:
+  # INFRA-1175: credencial OVH Object Storage para el rclone de abajo. Con el
+  # namePrefix `bundles-` el objeto queda `bundles-s3-ovh` (mismo nombre que el
+  # Secret target, escrito literal: kustomize no toca spec.target.name).
+  - s3-ovh.externalsecret.yaml
+
 configMapGenerator:
   - name: private-review-sync-8ab0d624b90ec479
     files:
@@ -41,23 +47,30 @@ patches:
                 env:
                   - name: RCLONE_CONFIG_REVIEW_TYPE
                     value: s3
+                  # INFRA-1175: el bucket skirmshop-drive vive ahora en OVH
+                  # Object Storage (el MinIO de casa se apaga). OVH no es
+                  # compatible con el provider Minio de rclone: provider Other,
+                  # region sbg y force_path_style, como en los demás
+                  # consumidores ya migrados.
                   - name: RCLONE_CONFIG_REVIEW_PROVIDER
-                    value: Minio
+                    value: Other
                   - name: RCLONE_CONFIG_REVIEW_REGION
-                    value: us-east-1
+                    value: sbg
+                  - name: RCLONE_CONFIG_REVIEW_FORCE_PATH_STYLE
+                    value: "true"
                   - name: RCLONE_CONFIG_REVIEW_ENDPOINT
-                    value: http://skirmshop-drive-s3.backup-hub.svc.cluster.local:9000
+                    value: https://s3.sbg.io.cloud.ovh.net
                   - name: REVIEW_BUCKET
                     value: skirmshop-drive
                   - name: RCLONE_CONFIG_REVIEW_ACCESS_KEY_ID
                     valueFrom:
                       secretKeyRef:
-                        name: skirmshop-drive-s3-bundles
+                        name: bundles-s3-ovh
                         key: AWS_ACCESS_KEY_ID
                   - name: RCLONE_CONFIG_REVIEW_SECRET_ACCESS_KEY
                     valueFrom:
                       secretKeyRef:
-                        name: skirmshop-drive-s3-bundles
+                        name: bundles-s3-ovh
                         key: AWS_SECRET_ACCESS_KEY
                 volumeMounts:
                   - name: private-review-sync
