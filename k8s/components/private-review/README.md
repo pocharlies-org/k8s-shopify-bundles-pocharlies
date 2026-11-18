@@ -19,11 +19,13 @@ Do not overwrite a published version; create a new package version instead.
 
 ## Preconditions for activation
 
-1. A scanned and signed bundles image containing `shopify-bundle-app#8` and the
-   dependency remediation in `shopify-bundle-app#10`. Release run `43618314437`
-   published source `1def229147a51b905b055bb32d8c091ae2a17345` with digest
-   `sha256:d52fb18f6833d5779f6d3a928d7df918293ed4cddeb9e88c7cbc34f808c2b472`.
-   The root overlay pins that exact digest; migrations run through deployment.
+1. A scanned and signed bundles image containing `shopify-bundle-app#8`, the
+   dependency remediation in `shopify-bundle-app#10` and the session-storage
+   fix `shopify-bundle-app#13` (without it every embedded admin load 500s).
+   Release run `44248937308` published source `27707c17a417d787a9075f6573753022b2ba64df`
+   with digest `sha256:a6d66a963dae5a023690c7708bbbe97220203b1468460102e83afead7d0973b0`
+   (Trivy gate green after the bounded `apk upgrade` of #15). The root overlay
+   pins that exact digest; migrations run through deployment.
 2. The credential is declared in this component by the ExternalSecret `s3-ovh`
    (rendered `bundles-s3-ovh`), reading the 1Password item
    `ovh-object-storage-s3` through the `onepassword-connect` store
