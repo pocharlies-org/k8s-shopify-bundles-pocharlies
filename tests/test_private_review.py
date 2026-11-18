@@ -83,7 +83,7 @@ spec:
                  if 'name:' in line and 'private-review-sync-8ab0d624b90ec479' in line]
         self.assertEqual(names, ['name: bundles-private-review-sync-8ab0d624b90ec479'] * 3)
         self.assertIn('image: harbor.e-dani.com/homelab/shopify-bundle-app@sha256:'
-                      'd52fb18f6833d5779f6d3a928d7df918293ed4cddeb9e88c7cbc34f808c2b472', result.stdout)
+                      'a6d66a963dae5a023690c7708bbbe97220203b1468460102e83afead7d0973b0', result.stdout)
         self.assertIn('exec node ./node_modules/@remix-run/serve/dist/cli.js ./build/server/index.js', result.stdout)
 
     def test_startup_migrates_and_imports_before_serving(self):
